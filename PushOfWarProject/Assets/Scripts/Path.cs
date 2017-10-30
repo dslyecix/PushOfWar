@@ -16,32 +16,56 @@ public class Path : MonoBehaviour {
 		}
 	}
 
-	public Transform ReturnNextNodePosition (Transform currentNode, bool playerTwo) {
-		if (currentNode == null) { 						// Unit passes in 'null', meaning they are just starting their journey
-			if (!playerTwo) {
-				return pathNodes[0];
+	public Transform ReturnNextNodePosition (Transform currentNode, Unit unit) {
+		int currentNodeIndex = GetIndexOfCurrentNode(currentNode, unit); //-1 if not found, -2 if targetting enemy base 
+		int nextNodeIndex = GetIndexOfNextNode(currentNodeIndex, unit);
+		if (nextNodeIndex == -2) {
+			if (!unit.playerTwo){
+				return playerTwoBase;
 			} else {
-				return pathNodes[pathNodes.Count - 1];
+				return playerOneBase;
 			}
-		} else {										// Unit passes in an existing node, figure out the next one in the path
-			for (int i = 0; i < pathNodes.Count; i++)
-			{
-				if (currentNode == pathNodes[i]) {
-					if (!playerTwo){
-						if (i < pathNodes.Count - 1) { 
-							return pathNodes[i + 1];
-						} else {						//a PlayerOne unit has reached the end of its path, return enemy base
-							return playerTwoBase;
-						}
-					} else if (i > 0) {  
-						return pathNodes[i - 1];
-					} else {							//a PlayerOne unit has reached the end of its path, return enemy base
-						return playerOneBase;
-					}
-				}
+		} else {
+			return pathNodes[nextNodeIndex];
+		}
+	}
+
+
+	int GetIndexOfCurrentNode (Transform currentNode, Unit unit) {
+		for (int i = 0; i < pathNodes.Count; i++) {
+			if (currentNode == pathNodes[i]) {
+				return i;
 			}
 		}
-		//There is no such node on the path!
-		return null;
+
+		if (currentNode == unit.enemyBase) {
+			return -2;
+		}
+
+		return -1;
 	}
+
+	int GetIndexOfNextNode (int currentNodeIndex, Unit unit) {
+		if (currentNodeIndex == -1) {
+			if (!unit.playerTwo) {
+				return 0;
+			} else {
+				return pathNodes.Count - 1;
+			}
+		}
+		if (!unit.playerTwo) {
+			if (currentNodeIndex < pathNodes.Count - 1) { 
+				return currentNodeIndex + 1;
+			} else {
+				return -2;
+			}				
+		} else {
+			if (currentNodeIndex > 0) { 
+				return currentNodeIndex - 1;
+			} else {
+				return -2;
+			}	
+		}
+	}
+
 }

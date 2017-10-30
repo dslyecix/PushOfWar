@@ -16,6 +16,8 @@ public class Base : MonoBehaviour {
 	public float hitPoints;
 	ScoreManager sm;
 
+	public Path selectedPath;
+
 	void Start () {
 		sm = FindObjectOfType<ScoreManager>();
 
@@ -29,6 +31,8 @@ public class Base : MonoBehaviour {
 			path2.playerTwoBase = this.transform;
 			path3.playerTwoBase = this.transform;
 		}
+
+		selectedPath = path1;
 	}
 
 	void Update () {
@@ -36,9 +40,9 @@ public class Base : MonoBehaviour {
 		bool b = Input.GetKeyDown(KeyCode.Alpha2);
 		bool c = Input.GetKeyDown(KeyCode.Alpha3);
 
-		if (a || b || c) {
-			
-		}
+		if (a) SpawnUnit();
+		if (b) SpawnUnit();
+		if (c) SpawnUnit();
 	}
 
 	public void TakeDamage (float damage){
@@ -62,7 +66,7 @@ public class Base : MonoBehaviour {
 		SceneManager.LoadSceneAsync(scene.buildIndex);
 	}
 
-	void SpawnUnit (Unit unit) {
+	public void SpawnUnit () {
 		if ((playerTwo?sm.p2money:sm.p1money) >= unitPrefab.GetComponent<Unit>().cost) {
 			GameObject go = Instantiate(unitPrefab,spawnPoint.position,Quaternion.identity);
 			Unit goUnit = go.GetComponent<Unit>();
@@ -71,6 +75,7 @@ public class Base : MonoBehaviour {
 			goUnit.enemyBase = enemyBase;
 			goUnit.playerTwo = playerTwo;
 			goUnit.waitZone = waitZone;
+			goUnit.targetPath = selectedPath;
 			go.transform.parent = unitParent.transform;
 
 			if (!playerTwo){
@@ -83,4 +88,10 @@ public class Base : MonoBehaviour {
 			Debug.Log("Ya can't afford shit mate");
 		}
 	}
+
+	public void SetSelectedPath (Path path) {
+		selectedPath = path;
+
+	}
+
 }
