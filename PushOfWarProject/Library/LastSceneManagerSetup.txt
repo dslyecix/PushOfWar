@@ -1,4 +1,4 @@
 sceneSetups:
-- path: Assets/Scenes/scene1.unity
+- path: Assets/KinematicCharacterController/Walkthrough/11- Charging state/Scene/WalkthroughScene11.unity
   isLoaded: 1
   isActive: 1
