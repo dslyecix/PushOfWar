@@ -7,14 +7,13 @@ public class Unit : MonoBehaviour {
 
 	public enum UnitState {onPath, attacking}
 
-	[SerializeField]
-	UnitState state;
+	[SerializeField] UnitState state;
 
 	public LayerMask enemyLayer;
 
 	Renderer renderer;
 	Animator animator;
-	public NavMeshAgent navMeshAgent;
+	NavMeshAgent navMeshAgent;
 	Transform currentPathTarget;
 	public Transform waitZone;
 	public Transform playerBase;
@@ -51,6 +50,7 @@ public class Unit : MonoBehaviour {
 		navMeshAgent.speed = moveSpeed;
 		navMeshAgent.acceleration = 300f;
 		navMeshAgent.stoppingDistance = attackRange;
+		navMeshAgent.SetDestination(waitZone.position);
 
 		readyToStartPath = false; //Will wait at the first start zone reached
 		attackTimer = 0; //Make it so when we first attack we don't have to wait for CD
@@ -61,69 +61,81 @@ public class Unit : MonoBehaviour {
 		state = UnitState.onPath;
 	}
 	
-	void Update () {
+	void Update ()
+    {
 
-		switch (state)
-		{
-			case UnitState.onPath: 
-				if (!readyToStartPath) { 																				//Unit needs to reach the waitzone before it can embark
-					navMeshAgent.SetDestination(waitZone.position);
+        switch (state)
+        {
+            case UnitState.onPath:
 
-					SearchForEnemies();
-
-					if ((transform.position - waitZone.position).sqrMagnitude < (aggroRange * aggroRange) && Input.GetKeyDown(KeyCode.Space)){//We get within 5 units and initiate embark
-						readyToStartPath = true;
-						if (currentPathTarget == enemyBase) {
-							Debug.Log("End of the line");
-						} else {
-							currentPathTarget = targetPath.ReturnNextNodePosition(null,playerTwo);
+                if (GetDistanceTo(currentPathTarget) <= aggroRange)
+                {
+					Debug.Log("Close to destination");
+					if (readyToStartPath)  {
+						Debug.Log("Getting new path target");
+                    	currentPathTarget = targetPath.ReturnNextNodePosition(currentPathTarget, this);
+					} else {
+						Debug.Log("Waiting to be released");
+						if (Input.GetKeyDown(KeyCode.Space)) {
+							Debug.Log("Released!");
+							readyToStartPath = true;
 						}
 					}
-				} else if ((transform.position - currentPathTarget.position).sqrMagnitude < aggroRange * aggroRange) {						//If less than 5 units away, get new path target
-					currentPathTarget = targetPath.ReturnNextNodePosition(currentPathTarget,playerTwo); 
-					Debug.Log("Setting path to " + currentPathTarget);
-				} else {																								//Otherwise, get new path target
-					navMeshAgent.SetDestination(currentPathTarget.position);
-				}
-
-				SearchForEnemies();
-				
-				break;
-			
-
-			case UnitState.attacking:
+                }
+                else
+                {                 
+					Debug.Log("Moving towards destination");
+                    navMeshAgent.SetDestination(currentPathTarget.position);
+                }
 
 				SearchForEnemies();
 
-				if (targetEnemy == null) {
-					Debug.Log("No more enemies found, reverting to path");
-					navMeshAgent.SetDestination(currentPathTarget.position);
-					state = UnitState.onPath;
-					break;
-				} else if ((transform.position - targetEnemy.position).sqrMagnitude > (attackRange * attackRange)) {
-					navMeshAgent.SetDestination(targetEnemy.position);													//TODO: add ReturnOpenAttackSpot() to figure out nice sorting
-				} else {
-					if (attackTimer > 0f) {
-						attackTimer -= Time.deltaTime;
-					} else {
-						Debug.Log ("Attacking " + targetEnemy.name);
-						Attack(targetEnemy);
-						attackTimer = attackTimeCooldown;
-						//isAttacking = false;
+                break;
+
+            case UnitState.attacking:
+
+				SearchForEnemies();
+
+                if (targetEnemy == null)
+                {
+                    Debug.Log("No more enemies found, reverting to path");
+                    navMeshAgent.SetDestination(currentPathTarget.position);
+                    state = UnitState.onPath;
+                }
+                else if (GetDistanceTo(targetEnemy) <= attackRange)
+                {
+                    if (attackTimer > 0f)
+                    {
+                        attackTimer -= Time.deltaTime;
+                    }
+                    else
+                    {
+                        Debug.Log("Attacking " + targetEnemy.name);
+                        Attack(targetEnemy);
+                        attackTimer = attackTimeCooldown;
+                        //isAttacking = false;
 					}
-				}
-				break;
-		}
-	}
-			
+                }
+                else {
+					Debug.Log("Stuck here");
+                    navMeshAgent.SetDestination(targetEnemy.position); 
+                }
+                break;
+        }
+    }
 
-	public void SearchForEnemies() {
-		if (enemySearchTimer > 0) {																			
+    private float GetDistanceTo(Transform targetTransform)
+    {
+        return (transform.position - targetTransform.position).magnitude;
+    }
+
+    public void SearchForEnemies() {
+		if (enemySearchTimer > 0) {	
 			enemySearchTimer -= Time.deltaTime;
 		} else {
 			enemySearchTimer = enemySearchTime;
 			enemies = null;
-			enemies = Physics.OverlapSphere(transform.position,aggroRange,enemyLayer); //Try to find nearby enemies
+			enemies = Physics.OverlapSphere(transform.position,aggroRange,enemyLayer);
 			float dist = float.MaxValue;
 			if (enemies != null) {
 				foreach (Collider e in enemies)	{
@@ -134,14 +146,13 @@ public class Unit : MonoBehaviour {
 						Debug.Log(transform.name + " targetting " + e.name);
 					}
 				}
+			} else {
+				targetEnemy = null;
 			}
 
-			if (targetEnemy == null) {																	//If none are found, return to path
-				Debug.Log("Changing state: following path");
-				navMeshAgent.SetDestination(currentPathTarget.position);
+			if (targetEnemy == null) {	
 				state = UnitState.onPath;
 			} else {	
-				navMeshAgent.SetDestination(targetEnemy.position);
 				state = UnitState.attacking;
 			}			
 		}

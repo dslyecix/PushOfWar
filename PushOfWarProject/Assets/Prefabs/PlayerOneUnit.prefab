@@ -98,7 +98,6 @@ MonoBehaviour:
   enemyLayer:
     serializedVersion: 2
     m_Bits: 512
-  navMeshAgent: {fileID: 0}
   waitZone: {fileID: 0}
   playerBase: {fileID: 0}
   enemyBase: {fileID: 0}
@@ -136,7 +135,7 @@ NavMeshAgent:
   m_Enabled: 1
   m_AgentTypeID: 0
   m_Radius: 0.5
-  m_Speed: 10
+  m_Speed: 30
   m_Acceleration: 8
   avoidancePriority: 50
   m_AngularSpeed: 300
